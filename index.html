@@ -431,7 +431,7 @@
                     container.innerHTML = data.items.slice(0, count).map(item => {
                         const rawImgUrl = extractImageFromRSS(item);
                         const wpCdnImgUrl = getWpCdnImage(rawImgUrl);
-                        const relTime = timeAgo(item.pubDate);
+                        const relTime = timeAlias = timeAgo(item.pubDate);
                         const title = decodeHTML(item.title);
 
                         const mediaHTML = wpCdnImgUrl 
@@ -439,7 +439,7 @@
                             : `<div class="article-badge">${fallbackBadgeText}</div>`;
 
                         return `
-                            <a href="${item.link}" target="_blank" class="article-card">
+                            <a href="${item.link}" target="_blank" class="article-card" title="${title}">
                                 ${mediaHTML}
                                 <div class="article-content">
                                     <div class="article-title">${title}</div>
