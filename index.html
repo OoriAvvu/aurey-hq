@@ -71,7 +71,7 @@
             justify-content: space-between;
             align-items: center;
             gap: 1.5rem;
-            margin-bottom: 2.5rem;
+            margin-bottom: 1.5rem;
             padding-bottom: 1.5rem;
             border-bottom: 1px solid var(--header-border);
         }
@@ -173,12 +173,63 @@
             color: var(--accent-orange);
         }
 
-        /* Dashboard Grid */
-        .dashboard-grid {
-            display: grid;
+        /* Sub-Header Page Navigation Bar */
+        .dashboard-subbar {
+            display: flex;
+            justify-content: flex-end;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 1.5rem;
+        }
+
+        .page-indicator {
+            font-family: 'Rajdhani', sans-serif;
+            font-weight: 700;
+            font-size: 0.95rem;
+            letter-spacing: 1px;
+            color: var(--text-muted);
+        }
+
+        .page-btn {
+            background: var(--bg-card);
+            color: var(--text-main);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            width: 36px;
+            height: 36px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.1rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            user-select: none;
+        }
+
+        .page-btn:hover:not(:disabled) {
+            background: var(--accent-orange);
+            color: #fff;
+            border-color: var(--accent-orange);
+            box-shadow: 0 0 12px var(--accent-orange-glow);
+        }
+
+        .page-btn:disabled {
+            opacity: 0.3;
+            cursor: not-allowed;
+            border-color: var(--border-color);
+        }
+
+        /* Dashboard Pages Grid */
+        .feed-page {
+            display: none;
             grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
             gap: 2rem;
             align-items: start;
+        }
+
+        .feed-page.active {
+            display: grid;
         }
 
         .feed-column {
@@ -349,47 +400,113 @@
         </div>
     </header>
 
-    <!-- Main RSS Columns Container -->
-    <main class="dashboard-grid">
+    <!-- Sub-Header Controls (Page Navigation Arrows) -->
+    <div class="dashboard-subbar">
+        <span class="page-indicator" id="pageIndicator">PAGE 01 / 02</span>
+        <button class="page-btn" id="prevPageBtn" onclick="changePage(-1)" disabled>←</button>
+        <button class="page-btn" id="nextPageBtn" onclick="changePage(1)">→</button>
+    </div>
 
-        <!-- Column 1: Gematsu -->
-        <section class="feed-column">
-            <div class="column-header">
-                <h2>Gematsu</h2>
-            </div>
-            <div class="feed-list" id="feed-gematsu">
-                <div class="status-msg">Fetching live intel...</div>
-            </div>
-        </section>
+    <!-- Main RSS Pages Container -->
+    <main>
 
-        <!-- Column 2: Eurogamer -->
-        <section class="feed-column">
-            <div class="column-header">
-                <h2>Eurogamer</h2>
-            </div>
-            <div class="feed-list" id="feed-eurogamer">
-                <div class="status-msg">Fetching live intel...</div>
-            </div>
-        </section>
+        <!-- PAGE 1 -->
+        <div class="feed-page active" id="page-1">
+            <!-- Column 1: Gematsu -->
+            <section class="feed-column">
+                <div class="column-header">
+                    <h2>Gematsu</h2>
+                </div>
+                <div class="feed-list" id="feed-gematsu">
+                    <div class="status-msg">Fetching live intel...</div>
+                </div>
+            </section>
 
-        <!-- Column 3: Rock Paper Shotgun -->
-        <section class="feed-column">
-            <div class="column-header">
-                <h2>Rock Paper Shotgun</h2>
-            </div>
-            <div class="feed-list" id="feed-rps">
-                <div class="status-msg">Fetching live intel...</div>
-            </div>
-        </section>
+            <!-- Column 2: Nintendo Life -->
+            <section class="feed-column">
+                <div class="column-header">
+                    <h2>Nintendo Life</h2>
+                </div>
+                <div class="feed-list" id="feed-nintendo">
+                    <div class="status-msg">Fetching live intel...</div>
+                </div>
+            </section>
+
+            <!-- Column 3: Eurogamer -->
+            <section class="feed-column">
+                <div class="column-header">
+                    <h2>Eurogamer</h2>
+                </div>
+                <div class="feed-list" id="feed-eurogamer">
+                    <div class="status-msg">Fetching live intel...</div>
+                </div>
+            </section>
+        </div>
+
+        <!-- PAGE 2 -->
+        <div class="feed-page" id="page-2">
+            <!-- Column 4: Rock Paper Shotgun -->
+            <section class="feed-column">
+                <div class="column-header">
+                    <h2>Rock Paper Shotgun</h2>
+                </div>
+                <div class="feed-list" id="feed-rps">
+                    <div class="status-msg">Fetching live intel...</div>
+                </div>
+            </section>
+
+            <!-- Column 5: Nintendo Everything -->
+            <section class="feed-column">
+                <div class="column-header">
+                    <h2>Nintendo Everything</h2>
+                </div>
+                <div class="feed-list" id="feed-ne">
+                    <div class="status-msg">Fetching live intel...</div>
+                </div>
+            </section>
+
+            <!-- Column 6: VGC (Video Games Chronicle) -->
+            <section class="feed-column">
+                <div class="column-header">
+                    <h2>VGC</h2>
+                </div>
+                <div class="feed-list" id="feed-vgc">
+                    <div class="status-msg">Fetching live intel...</div>
+                </div>
+            </section>
+        </div>
 
     </main>
 
     <script>
+        let currentPage = 1;
+        const totalPages = 2;
+
+        function changePage(delta) {
+            const newPage = currentPage + delta;
+            if (newPage >= 1 && newPage <= totalPages) {
+                currentPage = newPage;
+                
+                document.querySelectorAll('.feed-page').forEach((page, idx) => {
+                    page.classList.toggle('active', idx + 1 === currentPage);
+                });
+
+                document.getElementById('pageIndicator').textContent = `PAGE 0${currentPage} / 0${totalPages}`;
+                document.getElementById('prevPageBtn').disabled = (currentPage === 1);
+                document.getElementById('nextPageBtn').disabled = (currentPage === totalPages);
+            }
+        }
+
         function decodeHTML(html) {
             if (!html) return '';
             const txt = document.createElement('textarea');
             txt.innerHTML = html;
             return txt.value;
+        }
+
+        function escapeAttr(str) {
+            if (!str) return '';
+            return str.replace(/"/g, '&quot;').replace(/'/g, '&#39;');
         }
 
         function timeAgo(dateString) {
@@ -429,26 +546,61 @@
             return null;
         }
 
-        // Standard RSS Loader (Set to 7 items per column)
+// Direct RSS Loader using a zero-delay public CORS proxy & XML parser
         async function loadStandardFeed(rssUrl, containerId, sourceName, fallbackBadgeText, count = 7) {
             const container = document.getElementById(containerId);
             try {
-                const response = await fetch(`https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(rssUrl)}`);
+                // Busts server cache by attaching a timestamp (&_t=...) to force a live fetch
+                const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(rssUrl)}&_t=${Date.now()}`;
+                const response = await fetch(proxyUrl);
                 const data = await response.json();
 
-                if (data.status === 'ok') {
-                    container.innerHTML = data.items.slice(0, count).map(item => {
+                if (!data.contents) {
+                    container.innerHTML = `<div class="status-msg">Unable to load feed.</div>`;
+                    return;
+                }
+
+                // Parse raw XML string natively in the browser
+                const parser = new DOMParser();
+                const xmlDoc = parser.parseFromString(data.contents, "text/xml");
+                const xmlItems = xmlDoc.querySelectorAll("item");
+
+                let items = [];
+                xmlItems.forEach(node => {
+                    const title = node.querySelector("title")?.textContent || "";
+                    const link = node.querySelector("link")?.textContent || "";
+                    const pubDate = node.querySelector("pubDate")?.textContent || "";
+                    const description = node.querySelector("description")?.textContent || "";
+                    
+                    // Extract thumbnail from XML content or media tags
+                    let thumb = "";
+                    const contentEncoded = node.getElementsByTagNameNS("*", "encoded")[0]?.textContent || description;
+                    const imgMatch = contentEncoded.match(/<img[^>]+src=["']([^"']+)["']/i);
+                    if (imgMatch) thumb = imgMatch[1];
+
+                    items.push({
+                        title: title,
+                        link: link,
+                        pubDate: pubDate,
+                        thumbnail: thumb,
+                        description: description
+                    });
+                });
+
+                if (items.length > 0) {
+                    container.innerHTML = items.slice(0, count).map(item => {
                         const rawImgUrl = extractImageFromRSS(item);
                         const wpCdnImgUrl = getWpCdnImage(rawImgUrl);
-                        const relTime = timeAlias = timeAgo(item.pubDate);
+                        const relTime = timeAgo(item.pubDate);
                         const title = decodeHTML(item.title);
+                        const safeTitle = escapeAttr(title);
 
                         const mediaHTML = wpCdnImgUrl 
                             ? `<img src="${wpCdnImgUrl}" class="article-thumb" alt="" onerror="this.onerror=null; this.outerHTML='<div class=\\'article-badge\\'>${fallbackBadgeText}</div>';">`
                             : `<div class="article-badge">${fallbackBadgeText}</div>`;
 
                         return `
-                            <a href="${item.link}" target="_blank" class="article-card" title="${title}">
+                            <a href="${item.link}" target="_blank" class="article-card" title="${safeTitle}">
                                 ${mediaHTML}
                                 <div class="article-content">
                                     <div class="article-title">${title}</div>
@@ -462,7 +614,7 @@
                         `;
                     }).join('');
                 } else {
-                    container.innerHTML = `<div class="status-msg">Unable to load feed.</div>`;
+                    container.innerHTML = `<div class="status-msg">No articles found.</div>`;
                 }
             } catch (err) {
                 container.innerHTML = `<div class="status-msg">Connection error.</div>`;
@@ -499,10 +651,15 @@
             }
         })();
 
-        // Load all 3 feeds reliably on startup
+        // Load Page 1 Feeds
         loadStandardFeed('https://www.gematsu.com/feed', 'feed-gematsu', 'Gematsu', 'GE', 7);
+        loadStandardFeed('https://www.nintendolife.com/feeds/latest', 'feed-nintendo', 'Nintendo Life', 'NL', 7);
         loadStandardFeed('https://www.eurogamer.net/feed/news', 'feed-eurogamer', 'Eurogamer', 'EG', 7);
+
+        // Load Page 2 Feeds
         loadStandardFeed('https://www.rockpapershotgun.com/feed/news', 'feed-rps', 'RPS', 'RP', 7);
+        loadStandardFeed('https://nintendoeverything.com/feed/', 'feed-ne', 'Nintendo Everything', 'NE', 7);
+        loadStandardFeed('https://www.videogameschronicle.com/feed/', 'feed-vgc', 'VGC', 'VG', 7);
     </script>
 </body>
 </html>
