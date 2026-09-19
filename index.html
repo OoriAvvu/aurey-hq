@@ -546,49 +546,15 @@
             return null;
         }
 
-// Direct RSS Loader using a zero-delay public CORS proxy & XML parser
+        // Standard RSS Loader (7 items per column)
         async function loadStandardFeed(rssUrl, containerId, sourceName, fallbackBadgeText, count = 7) {
             const container = document.getElementById(containerId);
             try {
-                // Busts server cache by attaching a timestamp (&_t=...) to force a live fetch
-                const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(rssUrl)}&_t=${Date.now()}`;
-                const response = await fetch(proxyUrl);
+                const response = await fetch(`https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(rssUrl)}`);
                 const data = await response.json();
 
-                if (!data.contents) {
-                    container.innerHTML = `<div class="status-msg">Unable to load feed.</div>`;
-                    return;
-                }
-
-                // Parse raw XML string natively in the browser
-                const parser = new DOMParser();
-                const xmlDoc = parser.parseFromString(data.contents, "text/xml");
-                const xmlItems = xmlDoc.querySelectorAll("item");
-
-                let items = [];
-                xmlItems.forEach(node => {
-                    const title = node.querySelector("title")?.textContent || "";
-                    const link = node.querySelector("link")?.textContent || "";
-                    const pubDate = node.querySelector("pubDate")?.textContent || "";
-                    const description = node.querySelector("description")?.textContent || "";
-                    
-                    // Extract thumbnail from XML content or media tags
-                    let thumb = "";
-                    const contentEncoded = node.getElementsByTagNameNS("*", "encoded")[0]?.textContent || description;
-                    const imgMatch = contentEncoded.match(/<img[^>]+src=["']([^"']+)["']/i);
-                    if (imgMatch) thumb = imgMatch[1];
-
-                    items.push({
-                        title: title,
-                        link: link,
-                        pubDate: pubDate,
-                        thumbnail: thumb,
-                        description: description
-                    });
-                });
-
-                if (items.length > 0) {
-                    container.innerHTML = items.slice(0, count).map(item => {
+                if (data.status === 'ok') {
+                    container.innerHTML = data.items.slice(0, count).map(item => {
                         const rawImgUrl = extractImageFromRSS(item);
                         const wpCdnImgUrl = getWpCdnImage(rawImgUrl);
                         const relTime = timeAgo(item.pubDate);
@@ -614,7 +580,7 @@
                         `;
                     }).join('');
                 } else {
-                    container.innerHTML = `<div class="status-msg">No articles found.</div>`;
+                    container.innerHTML = `<div class="status-msg">Unable to load feed.</div>`;
                 }
             } catch (err) {
                 container.innerHTML = `<div class="status-msg">Connection error.</div>`;
