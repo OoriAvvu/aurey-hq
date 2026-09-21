@@ -387,14 +387,14 @@
 
     <!-- Add New Manga Form -->
     <div class="add-card-form">
-        <input type="text" id="inputTitle" placeholder="Manga Title (e.g., Berserk, となりの猫と恋知らず)..." required>
+        <input type="text" id="inputTitle" placeholder="作品名 (e.g., Berserk, となりの猫と恋知らず)..." required>
         <input type="number" id="inputChapter" placeholder="Ch. #" style="max-width: 90px;" value="1">
-        <input type="url" id="inputCover" placeholder="Optional Cover Image URL (leave blank to auto-fetch)...">
+        <input type="url" id="inputCover" placeholder="表紙イメージのURL (leave blank to auto-fetch)...">
         <select id="inputStatus">
-            <option value="Reading">Reading</option>
-            <option value="Plan to Read">Plan to Read</option>
-            <option value="Completed">Completed</option>
-            <option value="Dropped">Dropped</option>
+            <option value="Reading">読中</option>
+            <option value="Plan to Read">読みたい</option>
+            <option value="Completed">読了</option>
+            <option value="Dropped">中断</option>
         </select>
         <button class="btn-action" id="addBtn" onclick="addManga()">+ Add Entry</button>
     </div>
@@ -700,7 +700,7 @@
             localStorage.setItem('themePreference', newTheme);
             
             const btn = document.getElementById('themeToggleBtn');
-            btn.textContent = newTheme === 'light' ? '☀️ LIGHT' : '🌙 DARK';
+            btn.textContent = newTheme === 'light' ? '☀️ ライト' : '🌙 ダーク';
         };
 
         (function initTheme() {
@@ -708,7 +708,7 @@
             document.body.setAttribute('data-theme', savedTheme);
             const btn = document.getElementById('themeToggleBtn');
             if (btn) {
-                btn.textContent = savedTheme === 'light' ? '☀️ LIGHT' : '🌙 DARK';
+                btn.textContent = savedTheme === 'light' ? '☀️ ライト' : '🌙 ダーク';
             }
         })();
     </script>
