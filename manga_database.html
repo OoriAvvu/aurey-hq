@@ -257,7 +257,7 @@
         }
 
         .chapter-label {
-            font-size: 0.8rem;
+            font-size: 0.75rem;
             font-weight: 600;
             letter-spacing: 0.5px;
             color: var(--text-muted);
@@ -267,14 +267,15 @@
             font-family: 'Rajdhani', sans-serif;
             font-weight: 700;
             color: var(--accent-orange);
-            font-size: 1.2rem;
+            font-size: 0.95rem;
+            letter-spacing: 0.5px;
         }
 
         .edit-link {
             background: transparent;
             border: none;
             color: var(--accent-orange);
-            font-size: 0.75srem;
+            font-size: 0.75rem;
             font-weight: 600;
             cursor: pointer;
             text-align: right;
@@ -498,10 +499,17 @@
                 return;
             }
 
-            const keys = Object.keys(currentData).filter(key => {
+            let keys = Object.keys(currentData).filter(key => {
                 if (activeFilter === 'All') return true;
                 return currentData[key].status === activeFilter;
             });
+
+            // If tab is "All", do not sort by status or Unicode. Sort by createdAt timestamp (oldest to newest).
+            if (activeFilter === 'All') {
+                keys.sort((a, b) => (currentData[a].createdAt || 0) - (currentData[b].createdAt || 0));
+            } else {
+                keys.sort((a, b) => (currentData[a].createdAt || 0) - (currentData[b].createdAt || 0));
+            }
 
             if (keys.length === 0) {
                 container.innerHTML = `<div style="color: var(--text-muted); grid-column: 1/-1;">No entries under "${activeFilter}".</div>`;
@@ -511,6 +519,7 @@
             container.innerHTML = keys.map(key => {
                 const item = currentData[key];
                 const cover = item.cover || svgFallback;
+                const totalStr = item.totalChapters ? ` / ${item.totalChapters}` : ' / ?';
 
                 return `
                     <div class="manga-card">
@@ -522,7 +531,7 @@
                             
                             <div class="chapter-display-row">
                                 <span class="chapter-label">CHAPTER</span>
-                                <span class="chapter-num">${item.chapter}</span>
+                                <span class="chapter-num">${item.chapter}${totalStr}</span>
                             </div>
 
                             <button class="edit-link" onclick="openEditModal('${key}')">Edit</button>
@@ -547,8 +556,8 @@
             renderGrid();
         };
 
-        // Helper function for AniList cover fetching
-        async function fetchCoverFromAniList(title) {
+        // Helper function for AniList data fetching (cover + total chapters)
+        async function fetchMangaDataFromAniList(title) {
             const controller = new AbortController();
             const timeoutId = setTimeout(() => controller.abort(), 4000);
 
@@ -559,6 +568,7 @@
                             coverImage {
                                 large
                             }
+                            chapters
                         }
                     }
                 `;
@@ -578,14 +588,18 @@
                 
                 if (response.ok) {
                     const result = await response.json();
-                    return result?.data?.Media?.coverImage?.large || '';
+                    const media = result?.data?.Media;
+                    return {
+                        cover: media?.coverImage?.large || '',
+                        chapters: media?.chapters || null
+                    };
                 }
             } catch (err) {
-                console.log('AniList cover fetch skipped or timed out.');
+                console.log('AniList fetch skipped or timed out.');
             } finally {
                 clearTimeout(timeoutId);
             }
-            return '';
+            return { cover: '', chapters: null };
         }
 
         // Add Manga Function
@@ -599,10 +613,13 @@
 
             if (!title) return alert('Please enter a title!');
 
+            let totalChapters = null;
             if (!cover) {
                 addBtn.textContent = 'Searching...';
                 addBtn.disabled = true;
-                cover = await fetchCoverFromAniList(title);
+                const fetched = await fetchMangaDataFromAniList(title);
+                cover = fetched.cover;
+                totalChapters = fetched.chapters;
                 addBtn.textContent = '+ Add Entry';
                 addBtn.disabled = false;
             }
@@ -613,7 +630,9 @@
                 title: title,
                 chapter: chapter,
                 cover: cover || '',
-                status: status
+                status: status,
+                totalChapters: totalChapters,
+                createdAt: Date.now()
             });
 
             titleInput.value = '';
@@ -651,14 +670,20 @@
             saveBtn.textContent = 'Saving...';
             saveBtn.disabled = true;
 
-            // If cover URL field was cleared out, re-fetch based on the (potentially corrected) title
-            if (!newCover) {
-                newCover = await fetchCoverFromAniList(newTitle);
+            const existingItem = currentData[oldKey] || {};
+            let totalChapters = existingItem.totalChapters || null;
+
+            // If title changed or cover was wiped, re-fetch from AniList
+            if (existingItem.title !== newTitle || !newCover) {
+                const fetched = await fetchMangaDataFromAniList(newTitle);
+                if (!newCover) {
+                    newCover = fetched.cover;
+                }
+                totalChapters = fetched.chapters;
             }
 
             const newKey = encodeURIComponent(newTitle.toLowerCase().replace(/\s+/g, '-')).replace(/%/g, '_');
 
-            // If the title changed, remove the old database key and create the new one
             if (oldKey !== newKey) {
                 await remove(ref(db, `manga/${oldKey}`));
             }
@@ -667,7 +692,9 @@
                 title: newTitle,
                 chapter: newChapter,
                 cover: newCover || '',
-                status: newStatus
+                status: newStatus,
+                totalChapters: totalChapters,
+                createdAt: existingItem.createdAt || Date.now()
             });
 
             saveBtn.textContent = 'Save';
@@ -677,7 +704,7 @@
 
         window.deleteEntryFromModal = function() {
             const key = document.getElementById('editOldKey').value;
-            if (!key) return;
+            if (-!key) return;
 
             if (confirm('Are you sure you want to delete this manga entry?')) {
                 remove(ref(db, `manga/${key}`));
