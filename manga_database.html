@@ -439,11 +439,6 @@
                 </div>
 
                 <div class="form-group">
-                    <label>Total Chapters (Override)</label>
-                    <input type="number" id="editTotalChapters" min="0" placeholder="e.g. 105">
-                </div>
-
-                <div class="form-group">
                     <label>Reading Status</label>
                     <select id="editStatus">
                         <option value="Reading">Reading</option>
@@ -487,9 +482,6 @@
         const app = initializeApp(firebaseConfig);
         const db = getDatabase(app);
 
-        // Your Cloudflare CORS Proxy URL
-        const PROXY_URL = "https://manga-vault-proxy.haureynihon.workers.dev/?url=";
-
         // Zero-network memory fallback SVG
         const svgFallback = "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='220' height='280' viewBox='0 0 220 280'><rect width='100%' height='100%' fill='%23181822'/><text x='50%' y='50%' dominant-baseline='middle' text-anchor='middle' fill='%23ff6600' font-family='sans-serif' font-weight='bold' font-size='16'>NO COVER</text></svg>";
 
@@ -532,7 +524,6 @@
             container.innerHTML = keys.map(key => {
                 const item = currentData[key];
                 const cover = item.cover || svgFallback;
-                const totalStr = item.totalChapters ? ` / ${item.totalChapters}` : ' / ?';
 
                 return `
                     <div class="manga-card">
@@ -544,7 +535,7 @@
                             
                             <div class="chapter-display-row">
                                 <span class="chapter-label">CHAPTER</span>
-                                <span class="chapter-num">${item.chapter}${totalStr}</span>
+                                <span class="chapter-num">${item.chapter}</span>
                             </div>
 
                             <button class="edit-link" onclick="openEditModal('${key}')">Edit</button>
@@ -569,26 +560,26 @@
             renderGrid();
         };
 
-        // Fetch Cover & Chapter Count via Jikan (MyAnimeList) through your CORS Proxy
-        async function fetchMangaDataFromJikan(title) {
+        // Direct Browser Fetch: AniList for high-res cover art
+        async function fetchAniListCover(title) {
             try {
-                const targetApi = `https://api.jikan.moe/v4/manga?q=${encodeURIComponent(title)}&limit=1`;
-                const response = await fetch(PROXY_URL + encodeURIComponent(targetApi));
-                
-                if (response.ok) {
-                    const json = await response.json();
-                    const manga = json?.data?.[0];
-                    if (manga) {
-                        return {
-                            cover: manga.images?.jpg?.large_image_url || manga.images?.jpg?.image_url || '',
-                            chapters: manga.chapters || null
-                        };
-                    }
+                const res = await fetch('https://graphql.anilist.co', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+                    body: JSON.stringify({
+                        query: `query ($search: String) { Media (search: $search, type: MANGA) { coverImage { extraLarge large } } }`,
+                        variables: { search: title }
+                    })
+                });
+                if (res.ok) {
+                    const json = await res.json();
+                    const media = json?.data?.Media;
+                    return media?.coverImage?.extraLarge || media?.coverImage?.large || '';
                 }
             } catch (err) {
-                console.log('Jikan proxy fetch failed:', err);
+                console.log('AniList cover fetch error:', err);
             }
-            return { cover: '', chapters: null };
+            return '';
         }
 
         // Add Manga Function
@@ -602,14 +593,12 @@
 
             if (!title) return alert('Please enter a title!');
 
-            addBtn.textContent = 'Fetching via Proxy...';
+            addBtn.textContent = 'Fetching Cover...';
             addBtn.disabled = true;
 
-            const fetched = await fetchMangaDataFromJikan(title);
             if (!cover) {
-                cover = fetched.cover;
+                cover = await fetchAniListCover(title);
             }
-            let totalChapters = fetched.chapters;
 
             addBtn.textContent = '+ Add Entry';
             addBtn.disabled = false;
@@ -622,7 +611,6 @@
                 chapter: chapter,
                 cover: cover || '',
                 status: status,
-                totalChapters: totalChapters,
                 createdAt: Date.now()
             });
 
@@ -639,7 +627,6 @@
             document.getElementById('editTitle').value = item.title;
             document.getElementById('editSortKey').value = item.sortKey || item.title;
             document.getElementById('editChapter').value = item.chapter;
-            document.getElementById('editTotalChapters').value = item.totalChapters || '';
             document.getElementById('editStatus').value = item.status;
             document.getElementById('editCover').value = item.cover || '';
 
@@ -655,7 +642,6 @@
             const newTitle = document.getElementById('editTitle').value.trim();
             let newSortKey = document.getElementById('editSortKey').value.trim();
             const newChapter = parseInt(document.getElementById('editChapter').value) || 0;
-            const manualTotalChapters = parseInt(document.getElementById('editTotalChapters').value);
             const newStatus = document.getElementById('editStatus').value;
             let newCover = document.getElementById('editCover').value.trim();
             const saveBtn = document.getElementById('saveBtn');
@@ -667,16 +653,11 @@
             saveBtn.disabled = true;
 
             const existingItem = currentData[oldKey] || {};
-            let totalChapters = !isNaN(manualTotalChapters) ? manualTotalChapters : existingItem.totalChapters;
 
-            // If manual total was NOT provided and title changed / cover wiped, fetch via proxy
-            if (isNaN(manualTotalChapters) && (existingItem.title !== newTitle || !newCover)) {
-                const fetched = await fetchMangaDataFromJikan(newTitle);
+            // If cover is missing or title changed, fetch fresh cover art from AniList
+            if (!newCover || existingItem.title !== newTitle) {
                 if (!newCover) {
-                    newCover = fetched.cover;
-                }
-                if (fetched.chapters) {
-                    totalChapters = fetched.chapters;
+                    newCover = await fetchAniListCover(newTitle);
                 }
             }
 
@@ -692,7 +673,6 @@
                 chapter: newChapter,
                 cover: newCover || '',
                 status: newStatus,
-                totalChapters: totalChapters || null,
                 createdAt: existingItem.createdAt || Date.now()
             });
 
