@@ -482,6 +482,7 @@
 
         let currentData = null;
         let activeFilter = 'All';
+        const fetchingKeys = new Set();
 
         // Real-time Database Listener
         const mangaRef = ref(db, 'manga');
@@ -504,12 +505,13 @@
                 return currentData[key].status === activeFilter;
             });
 
-            // If tab is "All", do not sort by status or Unicode. Sort by createdAt timestamp (oldest to newest).
-            if (activeFilter === 'All') {
-                keys.sort((a, b) => (currentData[a].createdAt || 0) - (currentData[b].createdAt || 0));
-            } else {
-                keys.sort((a, b) => (currentData[a].createdAt || 0) - (currentData[b].createdAt || 0));
-            }
+            // Unified Japanese Sorting using Intl.Collator with locale 'ja'
+            const jaCollator = new Intl.Collator('ja', { numeric: true, sensitivity: 'base' });
+            keys.sort((a, b) => {
+                const titleA = currentData[a].title || '';
+                const titleB = currentData[b].title || '';
+                return jaCollator.compare(titleA, titleB);
+            });
 
             if (keys.length === 0) {
                 container.innerHTML = `<div style="color: var(--text-muted); grid-column: 1/-1;">No entries under "${activeFilter}".</div>`;
@@ -519,6 +521,15 @@
             container.innerHTML = keys.map(key => {
                 const item = currentData[key];
                 const cover = item.cover || svgFallback;
+                
+                // Self-healing check for missing totalChapters
+                if (item.totalChapters === undefined && !fetchingKeys.has(key)) {
+                    fetchingKeys.add(key);
+                    fetchMangaDataFromAniList(item.title).then(fetched => {
+                        update(ref(db, `manga/${key}`), { totalChapters: fetched.chapters || null });
+                    });
+                }
+
                 const totalStr = item.totalChapters ? ` / ${item.totalChapters}` : ' / ?';
 
                 return `
@@ -622,6 +633,10 @@
                 totalChapters = fetched.chapters;
                 addBtn.textContent = '+ Add Entry';
                 addBtn.disabled = false;
+            } else {
+                // Even if cover is provided, fetch chapter count if possible
+                const fetched = await fetchMangaDataFromAniList(title);
+                totalChapters = fetched.chapters;
             }
 
             const key = encodeURIComponent(title.toLowerCase().replace(/\s+/g, '-')).replace(/%/g, '_');
@@ -675,7 +690,7 @@
 
             // If title changed or cover was wiped, re-fetch from AniList
             if (existingItem.title !== newTitle || !newCover) {
-                const fetched = await fetchMangaDataFromAniList(newTitle);
+                const fetched = await fetchMangaDataFromAlphabeticalOrNativeOrRomaji = await fetchMangaDataFromAniList(newTitle);
                 if (!newCover) {
                     newCover = fetched.cover;
                 }
@@ -704,7 +719,7 @@
 
         window.deleteEntryFromModal = function() {
             const key = document.getElementById('editOldKey').value;
-            if (-!key) return;
+            if (!key) return;
 
             if (confirm('Are you sure you want to delete this manga entry?')) {
                 remove(ref(db, `manga/${key}`));
