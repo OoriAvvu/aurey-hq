@@ -429,6 +429,11 @@
                 </div>
 
                 <div class="form-group">
+                    <label>Sort Reading / Yomigana (Optional - for Kanji sorting)</label>
+                    <input type="text" id="editSortKey" placeholder="e.g. となりのねこ...">
+                </div>
+
+                <div class="form-group">
                     <label>Current Chapter</label>
                     <input type="number" id="editChapter" min="0">
                 </div>
@@ -491,7 +496,7 @@
             renderGrid();
         });
 
-        // Filter and Render Cards
+        // Filter and Render Cards (Dynamically sorted using Intl.Collator with custom sortKey fallback)
         function renderGrid() {
             const container = document.getElementById('mangaContainer');
             
@@ -505,12 +510,11 @@
                 return currentData[key].status === activeFilter;
             });
 
-            // Unified Japanese Sorting using Intl.Collator with locale 'ja'
             const jaCollator = new Intl.Collator('ja', { numeric: true, sensitivity: 'base' });
             keys.sort((a, b) => {
-                const titleA = currentData[a].title || '';
-                const titleB = currentData[b].title || '';
-                return jaCollator.compare(titleA, titleB);
+                const sortA = currentData[a].sortKey || currentData[a].title || '';
+                const sortB = currentData[b].sortKey || currentData[b].title || '';
+                return jaCollator.compare(sortA, sortB);
             });
 
             if (keys.length === 0) {
@@ -634,7 +638,6 @@
                 addBtn.textContent = '+ Add Entry';
                 addBtn.disabled = false;
             } else {
-                // Even if cover is provided, fetch chapter count if possible
                 const fetched = await fetchMangaDataFromAniList(title);
                 totalChapters = fetched.chapters;
             }
@@ -643,6 +646,7 @@
 
             set(ref(db, `manga/${key}`), {
                 title: title,
+                sortKey: title,
                 chapter: chapter,
                 cover: cover || '',
                 status: status,
@@ -661,6 +665,7 @@
 
             document.getElementById('editOldKey').value = key;
             document.getElementById('editTitle').value = item.title;
+            document.getElementById('editSortKey').value = item.sortKey || item.title;
             document.getElementById('editChapter').value = item.chapter;
             document.getElementById('editStatus').value = item.status;
             document.getElementById('editCover').value = item.cover || '';
@@ -675,12 +680,14 @@
         window.saveModalChanges = async function() {
             const oldKey = document.getElementById('editOldKey').value;
             const newTitle = document.getElementById('editTitle').value.trim();
+            let newSortKey = document.getElementById('editSortKey').value.trim();
             const newChapter = parseInt(document.getElementById('editChapter').value) || 0;
             const newStatus = document.getElementById('editStatus').value;
             let newCover = document.getElementById('editCover').value.trim();
             const saveBtn = document.getElementById('saveBtn');
 
             if (!oldKey || !newTitle) return alert('Title cannot be empty!');
+            if (!newSortKey) newSortKey = newTitle;
 
             saveBtn.textContent = 'Saving...';
             saveBtn.disabled = true;
@@ -688,9 +695,8 @@
             const existingItem = currentData[oldKey] || {};
             let totalChapters = existingItem.totalChapters || null;
 
-            // If title changed or cover was wiped, re-fetch from AniList
-            if (existingItem.title !== newTitle || !newCover) {
-                const fetched = await fetchMangaDataFromAlphabeticalOrNativeOrRomaji = await fetchMangaDataFromAniList(newTitle);
+            if (!totalChapters || existingItem.title !== newTitle || !newCover) {
+                const fetched = await fetchMangaDataFromAniList(newTitle);
                 if (!newCover) {
                     newCover = fetched.cover;
                 }
@@ -705,6 +711,7 @@
 
             await set(ref(db, `manga/${newKey}`), {
                 title: newTitle,
+                sortKey: newSortKey,
                 chapter: newChapter,
                 cover: newCover || '',
                 status: newStatus,
