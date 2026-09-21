@@ -566,12 +566,12 @@
             renderGrid();
         };
 
-        // Dual-API Hybrid Fetcher: AniList for high-res covers, Kitsu for robust chapter counts
+        // Hybrid Fetcher: AniList for high-res covers, Kitsu (.app API) for robust chapter counts
         async function fetchHybridMangaData(title) {
             let cover = '';
             let chapters = null;
 
-            // 1. Fetch from AniList (Prioritize for Cover Art)
+            // 1. Fetch from AniList (For Cover Art)
             try {
                 const anilistRes = await fetch('https://graphql.anilist.co', {
                     method: 'POST',
@@ -585,15 +585,15 @@
                     const result = await anilistRes.json();
                     const media = result?.data?.Media;
                     if (media?.coverImage?.large) cover = media.coverImage.large;
-                    if (media?.chapters) chapters = media.chapters; // Backup chapter source
+                    if (media?.chapters) chapters = media.chapters;
                 }
             } catch (err) {
                 console.log('AniList fetch skipped.');
             }
 
-            // 2. Fetch from Kitsu (Prioritize for Chapter Counts)
+            // 2. Fetch from Kitsu (.app API) (For Robust Chapter Counts)
             try {
-                const kitsuRes = await fetch(`https://kitsu.io/api/edge/manga?filter[text]=${encodeURIComponent(title)}&page[limit]=1`, {
+                const kitsuRes = await fetch(`https://kitsu.app/api/edge/manga?filter[text]=${encodeURIComponent(title)}&page[limit]=1`, {
                     headers: { 'Accept': 'application/vnd.api+json', 'Content-Type': 'application/vnd.api+json' }
                 });
                 if (kitsuRes.ok) {
@@ -601,10 +601,10 @@
                     const kitsuAttr = kitsuResult?.data?.[0]?.attributes;
                     if (kitsuAttr) {
                         if (kitsuAttr.chapterCount) {
-                            chapters = kitsuAttr.chapterCount; // Overwrite with Kitsu's robust chapter count
+                            chapters = kitsuAttr.chapterCount; // Prioritize Kitsu's robust chapter count
                         }
                         if (!cover && (kitsuAttr.posterImage?.large || kitsuAttr.posterImage?.original)) {
-                            cover = kitsuAttr.posterImage?.large || kitsuAttr.posterImage?.original; // Backup cover source
+                            cover = kitsuAttr.posterImage?.large || kitsuAttr.posterImage?.original;
                         }
                     }
                 }
