@@ -389,7 +389,7 @@
     <div class="add-card-form">
         <input type="text" id="inputTitle" placeholder="作品名 (e.g., Berserk, となりの猫と恋知らず)..." required>
         <input type="number" id="inputChapter" placeholder="Ch. #" style="max-width: 90px;" value="1">
-        <input type="url" id="inputCover" placeholder="表紙イメージのURL (leave blank to auto-fetch)...">
+        <input type="url" id="inputCover" placeholder="表紙イメージのURL (空白のままでオートフェッチ)">
         <select id="inputStatus">
             <option value="Reading">読中</option>
             <option value="Plan to Read">読みたい</option>
@@ -534,8 +534,8 @@
                             <div class="manga-title" title="${item.title}">${item.title}</div>
                             
                             <div class="chapter-display-row">
-                                <span class="chapter-label">CHAPTER</span>
-                                <span class="chapter-num">${item.chapter}</span>
+                                <span class="chapter-label">チャプター</span>
+                                <span class="chapter-num">${item.chapter}話</span>
                             </div>
 
                             <button class="edit-link" onclick="openEditModal('${key}')">Edit</button>
