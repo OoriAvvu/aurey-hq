@@ -113,7 +113,7 @@
             border: 1px solid var(--border-color);
             border-radius: 12px;
             padding: 1.25rem;
-            margin-bottom: 2rem;
+            margin-bottom: 1.5rem;
             display: flex;
             gap: 10px;
             flex-wrap: wrap;
@@ -155,6 +155,40 @@
             box-shadow: 0 0 12px var(--accent-orange-glow);
         }
 
+        /* Status Filter Navigation */
+        .filter-bar {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 1.5rem;
+            flex-wrap: wrap;
+        }
+
+        .filter-btn {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            color: var(--text-muted);
+            padding: 8px 16px;
+            border-radius: 6px;
+            font-family: 'Rajdhani', sans-serif;
+            font-weight: 700;
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .filter-btn:hover {
+            color: var(--text-main);
+            border-color: var(--accent-orange);
+        }
+
+        .filter-btn.active {
+            background: var(--accent-orange);
+            color: #fff;
+            border-color: var(--accent-orange);
+            box-shadow: 0 0 12px var(--accent-orange-glow);
+        }
+
         /* Manga Grid */
         .manga-grid {
             display: grid;
@@ -188,21 +222,6 @@
             width: 100%;
             height: 100%;
             object-fit: cover;
-        }
-
-        .status-tag {
-            position: absolute;
-            top: 10px;
-            right: 10px;
-            background: rgba(11, 11, 14, 0.85);
-            border: 1px solid var(--border-color);
-            padding: 4px 8px;
-            border-radius: 4px;
-            font-family: 'Rajdhani', sans-serif;
-            font-size: 0.75rem;
-            font-weight: 700;
-            color: var(--accent-orange);
-            backdrop-filter: blur(4px);
         }
 
         .card-details {
@@ -303,6 +322,15 @@
         <button class="btn-action" id="addBtn" onclick="addManga()">+ Add Entry</button>
     </div>
 
+    <!-- Status Filter Bar -->
+    <nav class="filter-bar">
+        <button class="filter-btn active" onclick="setFilter('All')">All</button>
+        <button class="filter-btn" onclick="setFilter('Reading')">Reading</button>
+        <button class="filter-btn" onclick="setFilter('Plan to Read')">Plan to Read</button>
+        <button class="filter-btn" onclick="setFilter('Completed')">Completed</button>
+        <button class="filter-btn" onclick="setFilter('Dropped')">Dropped</button>
+    </nav>
+
     <!-- Live Grid -->
     <main class="manga-grid" id="mangaContainer">
         <div style="color: var(--text-muted);">Syncing with cloud database...</div>
@@ -312,7 +340,7 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
         import { getDatabase, ref, set, update, remove, onValue } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
 
-        // Your exact Firebase project credentials
+        // Firebase Credentials
         const firebaseConfig = {
             apiKey: "AIzaSyBd8uDrxpy9jgoCu7GipIuja1Gwhk_n1Dg",
             authDomain: "aurey-hq.firebaseapp.com",
@@ -329,26 +357,43 @@
         // Zero-network memory fallback SVG
         const svgFallback = "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='220' height='280' viewBox='0 0 220 280'><rect width='100%' height='100%' fill='%23181822'/><text x='50%' y='50%' dominant-baseline='middle' text-anchor='middle' fill='%23ff6600' font-family='sans-serif' font-weight='bold' font-size='16'>NO COVER</text></svg>";
 
+        let currentData = null;
+        let activeFilter = 'All';
+
         // Real-time Database Listener
         const mangaRef = ref(db, 'manga');
         onValue(mangaRef, (snapshot) => {
-            const data = snapshot.val();
+            currentData = snapshot.val();
+            renderGrid();
+        });
+
+        // Filter and Render Cards
+        function renderGrid() {
             const container = document.getElementById('mangaContainer');
             
-            if (!data) {
+            if (!currentData) {
                 container.innerHTML = `<div style="color: var(--text-muted); grid-column: 1/-1;">No manga entries yet. Add one above!</div>`;
                 return;
             }
 
-            container.innerHTML = Object.keys(data).map(key => {
-                const item = data[key];
+            const keys = Object.keys(currentData).filter(key => {
+                if (activeFilter === 'All') return true;
+                return currentData[key].status === activeFilter;
+            });
+
+            if (keys.length === 0) {
+                container.innerHTML = `<div style="color: var(--text-muted); grid-column: 1/-1;">No entries under "${activeFilter}".</div>`;
+                return;
+            }
+
+            container.innerHTML = keys.map(key => {
+                const item = currentData[key];
                 const cover = item.cover || svgFallback;
 
                 return `
                     <div class="manga-card">
                         <div class="cover-wrapper">
                             <img src="${cover}" class="cover-img" alt="" onerror="this.onerror=null; this.src='${svgFallback}';">
-                            <span class="status-tag">${item.status}</span>
                         </div>
                         <div class="card-details">
                             <div class="manga-title" title="${item.title}">${item.title}</div>
@@ -365,9 +410,24 @@
                     </div>
                 `;
             }).join('');
-        });
+        }
 
-        // Add Manga Function using AniList GraphQL API (Fast & Stable)
+        // Change Filter Function
+        window.setFilter = function(filter) {
+            activeFilter = filter;
+            
+            document.querySelectorAll('.filter-btn').forEach(btn => {
+                if (btn.textContent.trim().toLowerCase() === filter.toLowerCase()) {
+                    btn.classList.add('active');
+                } else {
+                    btn.classList.remove('active');
+                }
+            });
+
+            renderGrid();
+        };
+
+        // Add Manga Function using AniList GraphQL API
         window.addManga = async function() {
             const titleInput = document.getElementById('inputTitle');
             const title = titleInput.value.trim();
@@ -378,9 +438,8 @@
 
             if (!title) return alert('Please enter a title!');
 
-            // If user left cover URL blank, query AniList GraphQL API
             if (!cover) {
-                addBtn.textContent = 'Searching AniList...';
+                addBtn.textContent = 'Searching...';
                 addBtn.disabled = true;
 
                 const controller = new AbortController();
@@ -424,7 +483,6 @@
                 }
             }
 
-            // Sanitize title into a safe database key (e.g., "Chainsaw Man" -> "chainsaw-man")
             const key = title.toLowerCase().replace(/[^a-z0-9]/g, '-');
 
             set(ref(db, `manga/${key}`), {
@@ -434,7 +492,6 @@
                 status: status
             });
 
-            // Clear inputs
             titleInput.value = '';
             document.getElementById('inputCover').value = '';
         };
