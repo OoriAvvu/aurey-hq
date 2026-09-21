@@ -326,7 +326,7 @@
         const app = initializeApp(firebaseConfig);
         const db = getDatabase(app);
 
-        // Zero-network memory fallback SVG (prevents external placeholder server failures)
+        // Zero-network memory fallback SVG
         const svgFallback = "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='220' height='280' viewBox='0 0 220 280'><rect width='100%' height='100%' fill='%23181822'/><text x='50%' y='50%' dominant-baseline='middle' text-anchor='middle' fill='%23ff6600' font-family='sans-serif' font-weight='bold' font-size='16'>NO COVER</text></svg>";
 
         // Real-time Database Listener
@@ -367,7 +367,7 @@
             }).join('');
         });
 
-        // Add Manga Function with Hard Timeout & Safe Fallback
+        // Add Manga Function using AniList GraphQL API (Fast & Stable)
         window.addManga = async function() {
             const titleInput = document.getElementById('inputTitle');
             const title = titleInput.value.trim();
@@ -378,29 +378,45 @@
 
             if (!title) return alert('Please enter a title!');
 
-            // If user left cover URL blank, attempt 3-second auto-fetch from Jikan API
+            // If user left cover URL blank, query AniList GraphQL API
             if (!cover) {
-                addBtn.textContent = 'Searching...';
+                addBtn.textContent = 'Searching AniList...';
                 addBtn.disabled = true;
 
-                // 3-second hard timeout abort controller
                 const controller = new AbortController();
-                const timeoutId = setTimeout(() => controller.abort(), 3000);
+                const timeoutId = setTimeout(() => controller.abort(), 4000);
 
                 try {
-                    const response = await fetch(`https://api.jikan.moe/v4/manga?q=${encodeURIComponent(title)}&limit=1`, {
+                    const graphqlQuery = `
+                        query ($search: String) {
+                            Media (search: $search, type: MANGA) {
+                                coverImage {
+                                    large
+                                }
+                            }
+                        }
+                    `;
+
+                    const response = await fetch('https://graphql.anilist.co', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Accept': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            query: graphqlQuery,
+                            variables: { search: title }
+                        }),
                         signal: controller.signal
                     });
                     
                     if (response.ok) {
-                        const searchData = await response.json();
-                        if (searchData.data && searchData.data.length > 0) {
-                            cover = searchData.data[0].images?.jpg?.large_image_url || searchData.data[0].images?.jpg?.image_url || '';
-                        }
+                        const result = await response.json();
+                        cover = result?.data?.Media?.coverImage?.large || '';
                     }
                 } catch (err) {
-                    console.log('Cover auto-fetch skipped or timed out gracefully.');
-                    cover = ''; // Graceful fallback to SVG placeholder
+                    console.log('AniList cover fetch skipped or timed out.');
+                    cover = ''; 
                 } finally {
                     clearTimeout(timeoutId);
                     addBtn.textContent = '+ Add Entry';
