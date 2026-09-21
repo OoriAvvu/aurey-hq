@@ -487,6 +487,9 @@
         const app = initializeApp(firebaseConfig);
         const db = getDatabase(app);
 
+        // Your Cloudflare CORS Proxy URL
+        const PROXY_URL = "https://manga-vault-proxy.haureynihon.workers.dev/?url=";
+
         // Zero-network memory fallback SVG
         const svgFallback = "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='220' height='280' viewBox='0 0 220 280'><rect width='100%' height='100%' fill='%23181822'/><text x='50%' y='50%' dominant-baseline='middle' text-anchor='middle' fill='%23ff6600' font-family='sans-serif' font-weight='bold' font-size='16'>NO COVER</text></svg>";
 
@@ -500,7 +503,7 @@
             renderGrid();
         });
 
-        // Filter and Render Cards (Dynamically sorted using Intl.Collator with custom sortKey fallback)
+        // Filter and Render Cards (Sorted using Intl.Collator with custom sortKey fallback)
         function renderGrid() {
             const container = document.getElementById('mangaContainer');
             
@@ -566,53 +569,26 @@
             renderGrid();
         };
 
-        // Hybrid Fetcher: AniList for high-res covers, Kitsu (.app API) for robust chapter counts
-        async function fetchHybridMangaData(title) {
-            let cover = '';
-            let chapters = null;
-
-            // 1. Fetch from AniList (For Cover Art)
+        // Fetch Cover & Chapter Count via Jikan (MyAnimeList) through your CORS Proxy
+        async function fetchMangaDataFromJikan(title) {
             try {
-                const anilistRes = await fetch('https://graphql.anilist.co', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-                    body: JSON.stringify({
-                        query: `query ($search: String) { Media (search: $search, type: MANGA) { coverImage { large } chapters } }`,
-                        variables: { search: title }
-                    })
-                });
-                if (anilistRes.ok) {
-                    const result = await anilistRes.json();
-                    const media = result?.data?.Media;
-                    if (media?.coverImage?.large) cover = media.coverImage.large;
-                    if (media?.chapters) chapters = media.chapters;
-                }
-            } catch (err) {
-                console.log('AniList fetch skipped.');
-            }
-
-            // 2. Fetch from Kitsu (.app API) (For Robust Chapter Counts)
-            try {
-                const kitsuRes = await fetch(`https://kitsu.app/api/edge/manga?filter[text]=${encodeURIComponent(title)}&page[limit]=1`, {
-                    headers: { 'Accept': 'application/vnd.api+json', 'Content-Type': 'application/vnd.api+json' }
-                });
-                if (kitsuRes.ok) {
-                    const kitsuResult = await kitsuRes.json();
-                    const kitsuAttr = kitsuResult?.data?.[0]?.attributes;
-                    if (kitsuAttr) {
-                        if (kitsuAttr.chapterCount) {
-                            chapters = kitsuAttr.chapterCount; // Prioritize Kitsu's robust chapter count
-                        }
-                        if (!cover && (kitsuAttr.posterImage?.large || kitsuAttr.posterImage?.original)) {
-                            cover = kitsuAttr.posterImage?.large || kitsuAttr.posterImage?.original;
-                        }
+                const targetApi = `https://api.jikan.moe/v4/manga?q=${encodeURIComponent(title)}&limit=1`;
+                const response = await fetch(PROXY_URL + encodeURIComponent(targetApi));
+                
+                if (response.ok) {
+                    const json = await response.json();
+                    const manga = json?.data?.[0];
+                    if (manga) {
+                        return {
+                            cover: manga.images?.jpg?.large_image_url || manga.images?.jpg?.image_url || '',
+                            chapters: manga.chapters || null
+                        };
                     }
                 }
             } catch (err) {
-                console.log('Kitsu fetch skipped.');
+                console.log('Jikan proxy fetch failed:', err);
             }
-
-            return { cover, chapters };
+            return { cover: '', chapters: null };
         }
 
         // Add Manga Function
@@ -626,10 +602,10 @@
 
             if (!title) return alert('Please enter a title!');
 
-            addBtn.textContent = 'Syncing...';
+            addBtn.textContent = 'Fetching via Proxy...';
             addBtn.disabled = true;
 
-            const fetched = await fetchHybridMangaData(title);
+            const fetched = await fetchMangaDataFromJikan(title);
             if (!cover) {
                 cover = fetched.cover;
             }
@@ -693,9 +669,9 @@
             const existingItem = currentData[oldKey] || {};
             let totalChapters = !isNaN(manualTotalChapters) ? manualTotalChapters : existingItem.totalChapters;
 
-            // If manual total was NOT provided and title changed / cover wiped / chapters were empty, fetch hybrid data
-            if (isNaN(manualTotalChapters) && (!totalChapters || existingItem.title !== newTitle || !newCover)) {
-                const fetched = await fetchHybridMangaData(newTitle);
+            // If manual total was NOT provided and title changed / cover wiped, fetch via proxy
+            if (isNaN(manualTotalChapters) && (existingItem.title !== newTitle || !newCover)) {
+                const fetched = await fetchMangaDataFromJikan(newTitle);
                 if (!newCover) {
                     newCover = fetched.cover;
                 }
