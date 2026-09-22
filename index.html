@@ -482,6 +482,22 @@
         let currentPage = 1;
         const totalPages = 2;
 
+        function updatePaginationUI() {
+            const prevBtn = document.getElementById('prevPageBtn');
+            const nextBtn = document.getElementById('nextPageBtn');
+            const indicator = document.getElementById('pageIndicator');
+
+            if (indicator) {
+                indicator.textContent = `PAGE 0${currentPage} / 0${totalPages}`;
+            }
+            if (prevBtn) {
+                prevBtn.disabled = (currentPage === 1);
+            }
+            if (nextBtn) {
+                nextBtn.disabled = (currentPage === totalPages);
+            }
+        }
+
         function changePage(delta) {
             const newPage = currentPage + delta;
             if (newPage >= 1 && newPage <= totalPages) {
@@ -491,9 +507,7 @@
                     page.classList.toggle('active', idx + 1 === currentPage);
                 });
 
-                document.getElementById('pageIndicator').textContent = `PAGE 0${currentPage} / 0${totalPages}`;
-                document.getElementById('prevPageBtn').disabled = (currentPage === 1);
-                document.getElementById('nextPageBtn').disabled = (currentPage === totalPages);
+                updatePaginationUI();
             }
         }
 
@@ -512,7 +526,6 @@
         function timeAgo(dateString) {
             if (!dateString) return 'Recently';
 
-            // Append 'Z' (UTC) if rss2json omitted the timezone offset
             const utcString = (dateString.includes('Z') || dateString.includes('+') || dateString.includes('GMT'))
                 ? dateString
                 : dateString.replace(' ', 'T') + 'Z';
@@ -527,7 +540,6 @@
             return `${Math.floor(seconds / 86400)}d ago`;
         }
 
-        // Bypasses Firefox CORP & AdBlockers using WordPress Official Jetpack CDN
         function getWpCdnImage(rawUrl) {
             if (!rawUrl || rawUrl.length < 5) return null;
             const cleanUrl = rawUrl.replace(/^https?:\/\//i, '');
@@ -546,7 +558,6 @@
             return null;
         }
 
-        // Standard RSS Loader (7 items per column)
         async function loadStandardFeed(rssUrl, containerId, sourceName, fallbackBadgeText, count = 7) {
             const container = document.getElementById(containerId);
             try {
@@ -626,6 +637,9 @@
         loadStandardFeed('https://www.rockpapershotgun.com/feed/news', 'feed-rps', 'RPS', 'RP', 7);
         loadStandardFeed('https://nintendoeverything.com/feed/', 'feed-ne', 'Nintendo Everything', 'NE', 7);
         loadStandardFeed('https://www.videogameschronicle.com/feed/', 'feed-vgc', 'VGC', 'VG', 7);
+
+        // Enforce pagination state on initial load / refresh
+        updatePaginationUI();
     </script>
 </body>
 </html>
