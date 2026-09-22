@@ -641,49 +641,50 @@
         };
 
         window.saveModalChanges = async function() {
-            const oldKey = document.getElementById('editOldKey').value;
-            const newTitle = document.getElementById('editTitle').value.trim();
-            let newSortKey = document.getElementById('editSortKey').value.trim();
-            const newChapter = parseInt(document.getElementById('editChapter').value) || 0;
-            const newStatus = document.getElementById('editStatus').value;
-            let newCover = document.getElementById('editCover').value.trim();
-            const saveBtn = document.getElementById('saveBtn');
+        const oldKey = document.getElementById('editOldKey').value;
+        const newTitle = document.getElementById('editTitle').value.trim();
+        let newSortKey = document.getElementById('editSortKey').value.trim();
+        const newChapter = parseInt(document.getElementById('editChapter').value) || 0;
+        const newStatus = document.getElementById('editStatus').value;
+        let newCover = document.getElementById('editCover').value.trim();
+        const saveBtn = document.getElementById('saveBtn');
 
-            if (!oldKey || !newTitle) return alert('Title cannot be empty!');
-            if (!newSortKey) newSortKey = newTitle;
+        if (!oldKey || !newTitle) return alert('Title cannot be empty!');
+        if (!newSortKey) newSortKey = newTitle;
 
-            saveBtn.textContent = 'Saving...';
-            saveBtn.disabled = true;
+        saveBtn.textContent = 'Saving...';
+        saveBtn.disabled = true;
 
-            const existingItem = currentData[oldKey] || {};
+        const existingItem = currentData[oldKey] || {};
 
-            // If cover is missing or title changed, fetch fresh cover art from AniList
-            if (!newCover || existingItem.title !== newTitle) {
-                if (!newCover) {
-                    newCover = await fetchAniListCover(newTitle);
-                }
+        // If cover is missing or title changed, fetch fresh cover art from AniList
+        if (!newCover || existingItem.title !== newTitle) {
+            if (!newCover) {
+                newCover = await fetchAniListCover(newTitle);
             }
+        }
 
-            const sanitizedTitle = title.toLowerCase().replace(/[.$#\[\]\/]/g, '').replace(/\s+/g, '-')
-            const key = encodeURIComponent(sanitizedTitle).replace(/%/g, '_');
+        // FIXED: Uses 'newTitle' and assigns to 'newKey'
+        const sanitizedTitle = newTitle.toLowerCase().replace(/[.$#\[\]\/]/g, '').replace(/\s+/g, '-');
+        const newKey = encodeURIComponent(sanitizedTitle).replace(/%/g, '_');
 
-            if (oldKey !== newKey) {
-                await remove(ref(db, `manga/${oldKey}`));
-            }
+        if (oldKey !== newKey) {
+            await remove(ref(db, `manga/${oldKey}`));
+        }
 
-            await set(ref(db, `manga/${newKey}`), {
-                title: newTitle,
-                sortKey: newSortKey,
-                chapter: newChapter,
-                cover: newCover || '',
-                status: newStatus,
-                createdAt: existingItem.createdAt || Date.now()
-            });
-
-            saveBtn.textContent = 'Save';
-            saveBtn.disabled = false;
-            closeEditModal();
-        };
+        await set(ref(db, `manga/${newKey}`), {
+            title: newTitle,
+            sortKey: newSortKey,
+            chapter: newChapter,
+            cover: newCover || '',
+            status: newStatus,
+            createdAt: existingItem.createdAt || Date.now()
+        });
+    
+        saveBtn.textContent = 'Save';
+        saveBtn.disabled = false;
+        closeEditModal();
+    };
 
         window.deleteEntryFromModal = function() {
             const key = document.getElementById('editOldKey').value;
