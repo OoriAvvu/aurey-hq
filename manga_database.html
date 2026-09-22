@@ -604,8 +604,9 @@
 
             addBtn.textContent = '+ エントリー追加';
             addBtn.disabled = false;
-
-            const key = encodeURIComponent(title.toLowerCase().replace(/\s+/g, '-')).replace(/%/g, '_');
+    
+            const sanitizedTitle = title.toLowerCase().replace(/[.$#\[\]\/]/g, '').replace(/\s+/g, '-');
+            const key = encodeURIComponent(sanitizedTitle).replace(/%/g, '_');
 
             set(ref(db, `manga/${key}`), {
                 title: title,
