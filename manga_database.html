@@ -49,7 +49,7 @@
             font-family: 'Inter', sans-serif;
             background-color: var(--bg-body);
             color: var(--text-main);
-            padding: 2rem 5%;
+            padding: 1.5rem 4%;
             min-height: 100vh;
             transition: background-color 0.3s ease, color 0.3s ease;
             -webkit-font-smoothing: antialiased;
@@ -60,25 +60,25 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 2rem;
-            padding-bottom: 1.5rem;
+            margin-bottom: 1.5rem;
+            padding-bottom: 1.2rem;
             border-bottom: 1px solid var(--header-border);
             flex-wrap: wrap;
-            gap: 1.5rem;
+            gap: 1rem;
         }
 
-        .brand { display: flex; align-items: center; gap: 12px; }
+        .brand { display: flex; align-items: center; gap: 10px; }
         .brand-logo {
-            width: 14px; height: 28px;
+            width: 11px; height: 22px;
             background: var(--accent-orange);
             transform: skewX(-15deg);
-            box-shadow: 0 0 12px var(--accent-orange-glow);
+            box-shadow: 0 0 10px var(--accent-orange-glow);
         }
         .brand h1 {
             font-family: 'Rajdhani', sans-serif;
-            font-size: 2.2rem;
+            font-size: 1.75rem;
             font-weight: 700;
-            letter-spacing: 1.5px;
+            letter-spacing: 1.2px;
             text-transform: uppercase;
             color: var(--text-main);
         }
@@ -89,9 +89,9 @@
             color: var(--accent-orange);
             font-family: 'Rajdhani', sans-serif;
             font-weight: 600;
-            font-size: 0.95rem;
+            font-size: 0.85rem;
             letter-spacing: 0.5px;
-            padding: 8px 16px;
+            padding: 6px 12px;
             border-radius: 6px;
             border: 1px solid var(--accent-orange);
             transition: all 0.2s ease;
@@ -99,25 +99,25 @@
             cursor: pointer;
             display: flex;
             align-items: center;
-            gap: 6px;
+            gap: 5px;
         }
 
         .theme-btn:hover {
             background: var(--accent-orange);
             color: #fff;
-            box-shadow: 0 0 15px var(--accent-orange-glow);
-            transform: translateY(-2deg);
+            box-shadow: 0 0 12px var(--accent-orange-glow);
+            transform: translateY(-1.5deg);
         }
 
         /* Add Form Card */
         .add-card-form {
             background: var(--bg-card);
             border: 1px solid var(--border-color);
-            border-radius: 12px;
-            padding: 1.25rem;
-            margin-bottom: 1.5rem;
+            border-radius: 10px;
+            padding: 1rem;
+            margin-bottom: 1.2rem;
             display: flex;
-            gap: 10px;
+            gap: 8px;
             flex-wrap: wrap;
             align-items: center;
         }
@@ -126,13 +126,13 @@
         .modal-body input, .modal-body select {
             background: var(--input-bg);
             border: 1px solid var(--border-color);
-            border-radius: 6px;
-            padding: 10px 14px;
+            border-radius: 5px;
+            padding: 8px 12px;
             color: var(--text-main);
             outline: none;
-            font-size: 0.9rem;
+            font-size: 0.85rem;
             flex: 1;
-            min-width: 140px;
+            min-width: 120px;
             transition: border-color 0.2s ease;
         }
 
@@ -145,10 +145,11 @@
             background: var(--accent-orange);
             color: #fff;
             border: none;
-            border-radius: 6px;
-            padding: 10px 20px;
+            border-radius: 5px;
+            padding: 8px 16px;
             font-family: 'Rajdhani', sans-serif;
             font-weight: 700;
+            font-size: 0.9rem;
             cursor: pointer;
             text-transform: uppercase;
             transition: all 0.2s ease;
@@ -156,14 +157,14 @@
 
         .btn-action:hover {
             background: var(--accent-orange-bright);
-            box-shadow: 0 0 12px var(--accent-orange-glow);
+            box-shadow: 0 0 10px var(--accent-orange-glow);
         }
 
         /* Status Filter Navigation */
         .filter-bar {
             display: flex;
-            gap: 10px;
-            margin-bottom: 1.5rem;
+            gap: 8px;
+            margin-bottom: 1.2rem;
             flex-wrap: wrap;
         }
 
@@ -171,11 +172,11 @@
             background: var(--bg-card);
             border: 1px solid var(--border-color);
             color: var(--text-muted);
-            padding: 8px 16px;
-            border-radius: 6px;
+            padding: 6px 14px;
+            border-radius: 5px;
             font-family: 'Rajdhani', sans-serif;
             font-weight: 700;
-            font-size: 0.9rem;
+            font-size: 0.8rem;
             text-transform: uppercase;
             cursor: pointer;
             transition: all 0.2s ease;
@@ -190,20 +191,20 @@
             background: var(--accent-orange);
             color: #fff;
             border-color: var(--accent-orange);
-            box-shadow: 0 0 12px var(--accent-orange-glow);
+            box-shadow: 0 0 10px var(--accent-orange-glow);
         }
 
-        /* Manga Grid */
+        /* Manga Grid (Scaled down minmax for 8-column layout) */
         .manga-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-            gap: 1.5rem;
+            grid-template-columns: repeat(auto-fill, minmax(165px, 1fr));
+            gap: 1.2rem;
         }
 
         .manga-card {
             background: var(--bg-card);
             border: 1px solid var(--border-color);
-            border-radius: 12px;
+            border-radius: 10px;
             overflow: hidden;
             display: flex;
             flex-direction: column;
@@ -211,13 +212,13 @@
         }
 
         .manga-card:hover {
-            transform: translateY(-4deg);
+            transform: translateY(-3px);
             border-color: var(--accent-orange);
         }
 
         .cover-wrapper {
             width: 100%;
-            height: 280px;
+            height: 220px;
             background: var(--input-bg);
             position: relative;
         }
@@ -229,16 +230,16 @@
         }
 
         .card-details {
-            padding: 1rem;
+            padding: 0.8rem;
             display: flex;
             flex-direction: column;
-            gap: 8px;
+            gap: 6px;
             flex-grow: 1;
             justify-content: space-between;
         }
 
         .manga-title {
-            font-size: 1rem;
+            font-size: 0.88rem;
             font-weight: 600;
             white-space: nowrap;
             overflow: hidden;
@@ -252,14 +253,14 @@
             justify-content: space-between;
             background: var(--input-bg);
             border: 1px solid var(--border-color);
-            border-radius: 6px;
-            padding: 8px 12px;
+            border-radius: 5px;
+            padding: 6px 10px;
         }
 
         .chapter-label {
-            font-size: 0.75rem;
+            font-size: 0.7rem;
             font-weight: 600;
-            letter-spacing: 0.5px;
+            letter-spacing: 0.4px;
             color: var(--text-muted);
         }
 
@@ -267,19 +268,19 @@
             font-family: 'Rajdhani', sans-serif;
             font-weight: 700;
             color: var(--accent-orange);
-            font-size: 0.95rem;
-            letter-spacing: 0.5px;
+            font-size: 0.85rem;
+            letter-spacing: 0.4px;
         }
 
         .edit-link {
             background: transparent;
             border: none;
             color: var(--accent-orange);
-            font-size: 0.75rem;
+            font-size: 0.7rem;
             font-weight: 600;
             cursor: pointer;
             text-align: right;
-            margin-top: 4px;
+            margin-top: 2px;
             opacity: 0.8;
             transition: opacity 0.2s ease, color 0.2s ease;
         }
@@ -304,14 +305,14 @@
         .modal-card {
             background: var(--bg-card);
             border: 1px solid var(--border-color);
-            border-radius: 12px;
+            border-radius: 10px;
             width: 100%;
-            max-width: 420px;
-            padding: 1.5rem;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+            max-width: 380px;
+            padding: 1.2rem;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.5);
             display: flex;
             flex-direction: column;
-            gap: 1.2rem;
+            gap: 1rem;
         }
 
         .modal-header {
@@ -322,7 +323,7 @@
 
         .modal-title {
             font-family: 'Rajdhani', sans-serif;
-            font-size: 1.4rem;
+            font-size: 1.2rem;
             font-weight: 700;
             color: var(--accent-orange);
             text-transform: uppercase;
@@ -331,17 +332,17 @@
         .modal-body {
             display: flex;
             flex-direction: column;
-            gap: 1rem;
+            gap: 0.8rem;
         }
 
         .form-group {
             display: flex;
             flex-direction: column;
-            gap: 6px;
+            gap: 4px;
         }
 
         .form-group label {
-            font-size: 0.8rem;
+            font-size: 0.75rem;
             font-weight: 600;
             color: var(--text-muted);
             text-transform: uppercase;
@@ -351,18 +352,19 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            gap: 10px;
-            margin-top: 0.5rem;
+            gap: 8px;
+            margin-top: 0.4rem;
         }
 
         .btn-danger {
             background: transparent;
             border: 1px solid #ff4444;
             color: #ff4444;
-            padding: 8px 14px;
-            border-radius: 6px;
+            padding: 6px 12px;
+            border-radius: 5px;
             font-family: 'Rajdhani', sans-serif;
             font-weight: 700;
+            font-size: 0.8rem;
             cursor: pointer;
             text-transform: uppercase;
             transition: all 0.2s ease;
@@ -388,7 +390,7 @@
     <!-- Add New Manga Form -->
     <div class="add-card-form">
         <input type="text" id="inputTitle" placeholder="作品名 (e.g., Berserk, となりの猫と恋知らず)..." required>
-        <input type="number" id="inputChapter" placeholder="Ch. #" style="max-width: 90px;" value="1">
+        <input type="number" id="inputChapter" placeholder="Ch. #" style="max-width: 80px;" value="1">
         <input type="url" id="inputCover" placeholder="表紙イメージのURL (空白のままでオートフェッチ)">
         <select id="inputStatus">
             <option value="Reading">読中</option>
@@ -410,7 +412,7 @@
 
     <!-- Live Grid -->
     <main class="manga-grid" id="mangaContainer">
-        <div style="color: var(--text-muted);">Syncing with cloud database...</div>
+        <div style="color: var(--text-muted); font-size: 0.85rem;">Syncing with cloud database...</div>
     </main>
 
     <!-- Edit Modal Overlay -->
@@ -456,7 +458,7 @@
 
             <div class="modal-actions">
                 <button class="btn-danger" onclick="deleteEntryFromModal()">Delete Entry</button>
-                <div style="display: flex; gap: 8px;">
+                <div style="display: flex; gap: 6px;">
                     <button class="filter-btn" onclick="closeEditModal()">Cancel</button>
                     <button class="btn-action" id="saveBtn" onclick="saveModalChanges()">Save</button>
                 </div>
@@ -483,7 +485,7 @@
         const db = getDatabase(app);
 
         // Zero-network memory fallback SVG
-        const svgFallback = "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='220' height='280' viewBox='0 0 220 280'><rect width='100%' height='100%' fill='%23181822'/><text x='50%' y='50%' dominant-baseline='middle' text-anchor='middle' fill='%23ff6600' font-family='sans-serif' font-weight='bold' font-size='16'>NO COVER</text></svg>";
+        const svgFallback = "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='165' height='220' viewBox='0 0 165 220'><rect width='100%' height='100%' fill='%23181822'/><text x='50%' y='50%' dominant-baseline='middle' text-anchor='middle' fill='%23ff6600' font-family='sans-serif' font-weight='bold' font-size='14'>NO COVER</text></svg>";
 
         let currentData = null;
         let activeFilter = 'All';
@@ -500,7 +502,7 @@
             const container = document.getElementById('mangaContainer');
             
             if (!currentData) {
-                container.innerHTML = `<div style="color: var(--text-muted); grid-column: 1/-1;">No manga entries yet. Add one above!</div>`;
+                container.innerHTML = `<div style="color: var(--text-muted); grid-column: 1/-1; font-size: 0.85rem;">No manga entries yet. Add one above!</div>`;
                 return;
             }
 
@@ -517,7 +519,7 @@
             });
 
             if (keys.length === 0) {
-                container.innerHTML = `<div style="color: var(--text-muted); grid-column: 1/-1;">No entries under "${activeFilter}".</div>`;
+                container.innerHTML = `<div style="color: var(--text-muted); grid-column: 1/-1; font-size: 0.85rem;">No entries under "${activeFilter}".</div>`;
                 return;
             }
 
@@ -600,7 +602,7 @@
                 cover = await fetchAniListCover(title);
             }
 
-            addBtn.textContent = '+ Add Entry';
+            addBtn.textContent = '+ エントリー追加';
             addBtn.disabled = false;
 
             const key = encodeURIComponent(title.toLowerCase().replace(/\s+/g, '-')).replace(/%/g, '_');
