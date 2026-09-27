@@ -563,33 +563,40 @@
             const myWorkerProxy = 'https://aureygamesrssproxy.haureynihon.workers.dev/';
             const proxyUrl = `${myWorkerProxy}?url=${encodeURIComponent(rssUrl)}`;
             
-            try {
-                const response = await fetch(proxyUrl);
-                if (!response.ok) return null;
-                const xmlText = await response.text();
-                
-                const parser = new DOMParser();
-                const xmlDoc = parser.parseFromString(xmlText, 'text/xml');
-                const items = Array.from(xmlDoc.querySelectorAll('item')).map(item => {
-                    const title = item.querySelector('title')?.textContent || '';
-                    const link = item.querySelector('link')?.textContent || '';
-                    const pubDate = item.querySelector('pubDate')?.textContent || '';
-                    const description = item.querySelector('description')?.textContent || '';
-                    
-                    let thumbnail = item.querySelector('enclosure')?.getAttribute('url') || null;
-                    if (!thumbnail) {
-                        const imgMatch = description.match(/<img[^>]+src=["']([^"']+)["']/i);
-                        if (imgMatch) thumbnail = imgMatch[1];
-                    }
-
-                    return { title, link, pubDate, description, thumbnail };
-                });
-                return items.length > 0 ? items : null;
-            } catch (err) {
-                console.warn('Raw XML fetch fallback failed:', err);
+       try {
+            const response = await fetch(proxyUrl);
+            if (!response.ok) return null;
+            const xmlText = await response.text();
+        
+            // Check if response is HTML (Cloudflare block page) instead of XML
+            const trimmed = xmlText.trim().toLowerCase();
+            if (trimmed.startsWith('<!doctype html') || trimmed.startsWith('<html')) {
+                console.warn('Received HTML block page instead of RSS XML.');
                 return null;
             }
+                
+            const parser = new DOMParser();
+            const xmlDoc = parser.parseFromString(xmlText, 'text/xml');
+            const items = Array.from(xmlDoc.querySelectorAll('item')).map(item => {
+                const title = item.querySelector('title')?.textContent || '';
+                const link = item.querySelector('link')?.textContent || '';
+                const pubDate = item.querySelector('pubDate')?.textContent || '';
+                const description = item.querySelector('description')?.textContent || '';
+                 
+                let thumbnail = item.querySelector('enclosure')?.getAttribute('url') || null;
+                if (!thumbnail) {
+                    const imgMatch = description.match(/<img[^>]+src=["']([^"']+)["']/i);
+                    if (imgMatch) thumbnail = imgMatch[1];
+                }
+
+                return { title, link, pubDate, description, thumbnail };
+            });
+            return items.length > 0 ? items : null;
+        } catch (err) {
+            console.warn('Raw XML fetch fallback failed:', err);
+            return null;
         }
+    }
 
         async function loadStandardFeed(rssUrl, containerId, sourceName, fallbackBadgeText, count = 7, excludeKeywords = []) {
             const container = document.getElementById(containerId);
