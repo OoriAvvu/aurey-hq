@@ -560,7 +560,9 @@
 
         // Direct XML Fetch via CORS Proxy (Fixes Nintendo Life Cloudflare 422 errors)
         async function fetchRawXmlFeed(rssUrl) {
-            const proxyUrl = `https://corsproxy.io/?${encodeURIComponent(rssUrl)}`;
+            const myWorkerProxy = 'https://aureygamesrssproxy.haureynihon.workers.dev/';
+            const proxyUrl = `${myWorkerProxy}?url=${encodeURIComponent(rssUrl)}`;
+            
             try {
                 const response = await fetch(proxyUrl);
                 if (!response.ok) return null;
