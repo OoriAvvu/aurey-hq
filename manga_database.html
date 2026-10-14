@@ -494,10 +494,10 @@
         </div>
     </div>
 
-    <script type="module">
+<script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
         import { getDatabase, ref, set, update, remove, onValue } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
-        import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 
         // Firebase Credentials
         const firebaseConfig = {
@@ -514,7 +514,7 @@
         const db = getDatabase(app);
         const auth = getAuth(app);
 
-        // Automatically sign in anonymously on load
+        // Silent anonymous authentication
         signInAnonymously(auth).catch((error) => {
             console.error("Anonymous auth error:", error);
         });
@@ -525,17 +525,6 @@
         let currentData = null;
         let activeFilter = 'All';
 
-        // Helper to escape HTML attributes cleanly
-        function escapeHtml(str) {
-            if (!str) return '';
-            return String(str)
-                .replace(/&/g, '&amp;')
-                .replace(/"/g, '&quot;')
-                .replace(/'/g, '&#39;')
-                .replace(/</g, '&lt;')
-                .replace(/>/g, '&gt;');
-        }
-
         // Real-time Database Listener
         const mangaRef = ref(db, 'manga');
         onValue(mangaRef, (snapshot) => {
@@ -543,36 +532,19 @@
             renderGrid();
         });
 
-        // Event delegation for grid buttons (Star & Edit)
-        const container = document.getElementById('mangaContainer');
-        container.addEventListener('click', (e) => {
-            const favBtn = e.target.closest('.fav-btn');
-            if (favBtn) {
-                e.preventDefault();
-                const key = favBtn.dataset.key;
-                if (key) toggleFavorite(key);
-                return;
-            }
-
-            const editBtn = e.target.closest('.edit-link');
-            if (editBtn) {
-                e.preventDefault();
-                const key = editBtn.dataset.key;
-                if (key) openEditModal(key);
-                return;
-            }
-        });
-
-        // Filter and Render Cards (Sorted using Intl.Collator with custom sortKey fallback)
+        // Filter and Render Cards
         function renderGrid() {
+            const container = document.getElementById('mangaContainer');
+            
             if (!currentData) {
                 container.innerHTML = `<div style="color: var(--text-muted); grid-column: 1/-1; font-size: 0.85rem;">No manga entries yet. Add one above!</div>`;
                 return;
             }
 
             let keys = Object.keys(currentData).filter(key => {
+                const isFav = currentData[key].isFavorite === true || currentData[key].isFavorite === 'true';
                 if (activeFilter === 'All') return true;
-                if (activeFilter === 'Favorites') return currentData[key].isFavorite === true;
+                if (activeFilter === 'Favorites') return isFav;
                 return currentData[key].status === activeFilter;
             });
 
@@ -592,9 +564,7 @@
             container.innerHTML = keys.map(key => {
                 const item = currentData[key];
                 const cover = item.cover || svgFallback;
-                const isFav = !!item.isFavorite;
-                const safeKey = escapeHtml(key);
-                const safeTitle = escapeHtml(item.title);
+                const isFav = item.isFavorite === true || item.isFavorite === 'true';
 
                 return `
                     <div class="manga-card">
@@ -602,7 +572,7 @@
                             <img src="${cover}" class="cover-img" alt="" onerror="this.onerror=null; this.src='${svgFallback}';">
                         </div>
                         <div class="card-details">
-                            <div class="manga-title" title="${safeTitle}">${safeTitle}</div>
+                            <div class="manga-title" title="${item.title}">${item.title}</div>
                             
                             <div class="chapter-display-row">
                                 <span class="chapter-label">チャプター</span>
@@ -610,8 +580,8 @@
                             </div>
 
                             <div class="card-footer-row">
-                                <button class="fav-btn ${isFav ? 'active' : ''}" data-key="${safeKey}" title="お気に入り">${isFav ? '★' : '☆'}</button>
-                                <button class="edit-link" data-key="${safeKey}">編集</button>
+                                <button class="fav-btn ${isFav ? 'active' : ''}" onclick="toggleFavorite('${key}')" title="お気に入り">${isFav ? '★' : '☆'}</button>
+                                <button class="edit-link" onclick="openEditModal('${key}')">編集</button>
                             </div>
                         </div>
                     </div>
@@ -619,17 +589,31 @@
             }).join('');
         }
 
-        // Toggle Favorite Function
-        async function toggleFavorite(key) {
+        // Toggle Favorite Function (Global)
+        window.toggleFavorite = async function(key) {
             if (!currentData || !currentData[key]) return;
+
+            // Ensure Auth is active before sending write command
+            if (!auth.currentUser) {
+                try {
+                    await signInAnonymously(auth);
+                } catch (e) {
+                    alert("Auth error: Please check if Anonymous Sign-in is enabled in Firebase Console.");
+                    return;
+                }
+            }
+
             const item = currentData[key];
-            const newFavState = !item.isFavorite;
+            const isCurrentlyFav = item.isFavorite === true || item.isFavorite === 'true';
+            const newFavState = !isCurrentlyFav;
+
             try {
                 await update(ref(db, `manga/${key}`), { isFavorite: newFavState });
             } catch (err) {
-                console.error("Failed to update favorite status:", err);
+                console.error("Firebase update failed:", err);
+                alert(`Write rejected by Firebase: ${err.message}\nCheck your Database Security Rules.`);
             }
-        }
+        };
 
         // Change Filter Function
         window.setFilter = function(filter) {
