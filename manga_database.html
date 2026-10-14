@@ -466,9 +466,10 @@
         </div>
     </div>
 
-    <script type="module">
+<script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
         import { getDatabase, ref, set, update, remove, onValue } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+        import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js"; // <-- Add this import
 
         // Firebase Credentials
         const firebaseConfig = {
@@ -483,6 +484,12 @@
 
         const app = initializeApp(firebaseConfig);
         const db = getDatabase(app);
+        const auth = getAuth(app); // <-- Initialize Auth
+
+        // Automatically sign in anonymously on load
+        signInAnonymously(auth).catch((error) => {
+            console.error("Anonymous auth error:", error);
+        });
 
         // Zero-network memory fallback SVG
         const svgFallback = "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='165' height='220' viewBox='0 0 165 220'><rect width='100%' height='100%' fill='%23181822'/><text x='50%' y='50%' dominant-baseline='middle' text-anchor='middle' fill='%23ff6600' font-family='sans-serif' font-weight='bold' font-size='14'>NO COVER</text></svg>";
