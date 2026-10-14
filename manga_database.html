@@ -194,7 +194,7 @@
             box-shadow: 0 0 10px var(--accent-orange-glow);
         }
 
-        /* Manga Grid (Scaled down minmax for 8-column layout) */
+        /* Manga Grid */
         .manga-grid {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
@@ -272,6 +272,34 @@
             letter-spacing: 0.4px;
         }
 
+        .card-footer-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-top: 2px;
+        }
+
+        .fav-btn {
+            background: transparent;
+            border: none;
+            color: var(--text-muted);
+            font-size: 1.1rem;
+            cursor: pointer;
+            transition: color 0.2s ease, transform 0.2s ease;
+            padding: 2px 4px;
+            line-height: 1;
+        }
+
+        .fav-btn:hover {
+            color: #ffcc00;
+            transform: scale(1.15);
+        }
+
+        .fav-btn.active {
+            color: #ffcc00;
+            text-shadow: 0 0 10px rgba(255, 204, 0, 0.4);
+        }
+
         .edit-link {
             background: transparent;
             border: none;
@@ -280,7 +308,6 @@
             font-weight: 600;
             cursor: pointer;
             text-align: right;
-            margin-top: 2px;
             opacity: 0.8;
             transition: opacity 0.2s ease, color 0.2s ease;
         }
@@ -403,11 +430,12 @@
 
     <!-- Status Filter Bar -->
     <nav class="filter-bar">
-        <button class="filter-btn active" onclick="setFilter('All')">すべて</button>
-        <button class="filter-btn" onclick="setFilter('Reading')">読中</button>
-        <button class="filter-btn" onclick="setFilter('Plan to Read')">読みたい</button>
-        <button class="filter-btn" onclick="setFilter('Completed')">読了</button>
-        <button class="filter-btn" onclick="setFilter('Dropped')">中断</button>
+        <button class="filter-btn" data-filter="Favorites" onclick="setFilter('Favorites')">お気に入り ★</button>
+        <button class="filter-btn active" data-filter="All" onclick="setFilter('All')">すべて</button>
+        <button class="filter-btn" data-filter="Reading" onclick="setFilter('Reading')">読中</button>
+        <button class="filter-btn" data-filter="Plan to Read" onclick="setFilter('Plan to Read')">読みたい</button>
+        <button class="filter-btn" data-filter="Completed" onclick="setFilter('Completed')">読了</button>
+        <button class="filter-btn" data-filter="Dropped" onclick="setFilter('Dropped')">中断</button>
     </nav>
 
     <!-- Live Grid -->
@@ -466,10 +494,10 @@
         </div>
     </div>
 
-<script type="module">
+    <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
         import { getDatabase, ref, set, update, remove, onValue } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
-        import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js"; // <-- Add this import
+        import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 
         // Firebase Credentials
         const firebaseConfig = {
@@ -484,7 +512,7 @@
 
         const app = initializeApp(firebaseConfig);
         const db = getDatabase(app);
-        const auth = getAuth(app); // <-- Initialize Auth
+        const auth = getAuth(app);
 
         // Automatically sign in anonymously on load
         signInAnonymously(auth).catch((error) => {
@@ -515,6 +543,7 @@
 
             let keys = Object.keys(currentData).filter(key => {
                 if (activeFilter === 'All') return true;
+                if (activeFilter === 'Favorites') return currentData[key].isFavorite === true;
                 return currentData[key].status === activeFilter;
             });
 
@@ -526,13 +555,15 @@
             });
 
             if (keys.length === 0) {
-                container.innerHTML = `<div style="color: var(--text-muted); grid-column: 1/-1; font-size: 0.85rem;">No entries under "${activeFilter}".</div>`;
+                const filterLabel = activeFilter === 'Favorites' ? 'お気に入り' : activeFilter;
+                container.innerHTML = `<div style="color: var(--text-muted); grid-column: 1/-1; font-size: 0.85rem;">No entries under "${filterLabel}".</div>`;
                 return;
             }
 
             container.innerHTML = keys.map(key => {
                 const item = currentData[key];
                 const cover = item.cover || svgFallback;
+                const isFav = item.isFavorite ? true : false;
 
                 return `
                     <div class="manga-card">
@@ -547,19 +578,30 @@
                                 <span class="chapter-num">${item.chapter} 話</span>
                             </div>
 
-                            <button class="edit-link" onclick="openEditModal('${key}')">編集</button>
+                            <div class="card-footer-row">
+                                <button class="fav-btn ${isFav ? 'active' : ''}" onclick="toggleFavorite('${key}')" title="お気に入り">${isFav ? '★' : '☆'}</button>
+                                <button class="edit-link" onclick="openEditModal('${key}')">編集</button>
+                            </div>
                         </div>
                     </div>
                 `;
             }).join('');
         }
 
+        // Toggle Favorite Function
+        window.toggleFavorite = async function(key) {
+            if (!currentData || !currentData[key]) return;
+            const item = currentData[key];
+            const newFavState = !item.isFavorite;
+            await update(ref(db, `manga/${key}`), { isFavorite: newFavState });
+        };
+
         // Change Filter Function
         window.setFilter = function(filter) {
             activeFilter = filter;
             
             document.querySelectorAll('.filter-btn').forEach(btn => {
-                if (btn.textContent.trim().toLowerCase() === filter.toLowerCase()) {
+                if (btn.getAttribute('data-filter') === filter) {
                     btn.classList.add('active');
                 } else {
                     btn.classList.remove('active');
@@ -621,6 +663,7 @@
                 chapter: chapter,
                 cover: cover || '',
                 status: status,
+                isFavorite: false,
                 createdAt: Date.now()
             });
 
@@ -648,50 +691,49 @@
         };
 
         window.saveModalChanges = async function() {
-        const oldKey = document.getElementById('editOldKey').value;
-        const newTitle = document.getElementById('editTitle').value.trim();
-        let newSortKey = document.getElementById('editSortKey').value.trim();
-        const newChapter = parseInt(document.getElementById('editChapter').value) || 0;
-        const newStatus = document.getElementById('editStatus').value;
-        let newCover = document.getElementById('editCover').value.trim();
-        const saveBtn = document.getElementById('saveBtn');
+            const oldKey = document.getElementById('editOldKey').value;
+            const newTitle = document.getElementById('editTitle').value.trim();
+            let newSortKey = document.getElementById('editSortKey').value.trim();
+            const newChapter = parseInt(document.getElementById('editChapter').value) || 0;
+            const newStatus = document.getElementById('editStatus').value;
+            let newCover = document.getElementById('editCover').value.trim();
+            const saveBtn = document.getElementById('saveBtn');
 
-        if (!oldKey || !newTitle) return alert('Title cannot be empty!');
-        if (!newSortKey) newSortKey = newTitle;
+            if (!oldKey || !newTitle) return alert('Title cannot be empty!');
+            if (!newSortKey) newSortKey = newTitle;
 
-        saveBtn.textContent = 'Saving...';
-        saveBtn.disabled = true;
+            saveBtn.textContent = 'Saving...';
+            saveBtn.disabled = true;
 
-        const existingItem = currentData[oldKey] || {};
+            const existingItem = currentData[oldKey] || {};
 
-        // If cover is missing or title changed, fetch fresh cover art from AniList
-        if (!newCover || existingItem.title !== newTitle) {
-            if (!newCover) {
-                newCover = await fetchAniListCover(newTitle);
+            if (!newCover || existingItem.title !== newTitle) {
+                if (!newCover) {
+                    newCover = await fetchAniListCover(newTitle);
+                }
             }
-        }
 
-        // FIXED: Uses 'newTitle' and assigns to 'newKey'
-        const sanitizedTitle = newTitle.toLowerCase().replace(/[.$#\[\]\/]/g, '').replace(/\s+/g, '-');
-        const newKey = encodeURIComponent(sanitizedTitle).replace(/%/g, '_');
+            const sanitizedTitle = newTitle.toLowerCase().replace(/[.$#\[\]\/]/g, '').replace(/\s+/g, '-');
+            const newKey = encodeURIComponent(sanitizedTitle).replace(/%/g, '_');
 
-        if (oldKey !== newKey) {
-            await remove(ref(db, `manga/${oldKey}`));
-        }
+            if (oldKey !== newKey) {
+                await remove(ref(db, `manga/${oldKey}`));
+            }
 
-        await set(ref(db, `manga/${newKey}`), {
-            title: newTitle,
-            sortKey: newSortKey,
-            chapter: newChapter,
-            cover: newCover || '',
-            status: newStatus,
-            createdAt: existingItem.createdAt || Date.now()
-        });
+            await set(ref(db, `manga/${newKey}`), {
+                title: newTitle,
+                sortKey: newSortKey,
+                chapter: newChapter,
+                cover: newCover || '',
+                status: newStatus,
+                isFavorite: existingItem.isFavorite || false,
+                createdAt: existingItem.createdAt || Date.now()
+            });
     
-        saveBtn.textContent = 'Save';
-        saveBtn.disabled = false;
-        closeEditModal();
-    };
+            saveBtn.textContent = 'Save';
+            saveBtn.disabled = false;
+            closeEditModal();
+        };
 
         window.deleteEntryFromModal = function() {
             const key = document.getElementById('editOldKey').value;
@@ -711,8 +753,10 @@
             document.body.setAttribute('data-theme', newTheme);
             localStorage.setItem('themePreference', newTheme);
             
-            const btn = document.getElementById('themeToggleBtn');
-            btn.textContent = newTheme === 'light' ? '☀️ ライト' : '🌙 ダーク';
+            const btn = document.getElementById('themeTitleBtn') || document.getElementById('themeToggleBtn');
+            if (btn) {
+                btn.textContent = newTheme === 'light' ? '☀️ ライト' : '🌙 ダーク';
+            }
         };
 
         (function initTheme() {
